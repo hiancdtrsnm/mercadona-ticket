@@ -1,16 +1,40 @@
 import re
+from datetime import datetime
 
 from pypdf import PdfReader
 
 from mercadona.product import Product
+from mercadona.ticket import Ticket
 
 
-def read_pdf_text(path: str) -> list[str]:
+def build_ticket(path: str) -> Ticket:
+    raw_ticket_contents = read_pdf_text(path)
+    bought_at = get_bought_at(raw_ticket_contents)
+    products = build_product_list(raw_ticket_contents)
+    return Ticket(bought_at=bought_at, products=products)
+
+
+def read_pdf_text(path: str) -> str:
     reader = PdfReader(path)
-    lines = []
+    content = []
     for page in reader.pages:
-        lines.extend(page.extract_text().split('\n'))
-    return lines
+        content.append(page.extract_text())
+    return "\n".join(content)
+
+
+def get_bought_at(raw_ticket: str) -> datetime:
+    regex = r"\d{2}/\d{2}/\d{4} \d{2}:\d{2}"
+    bought_at_str = re.search(regex, raw_ticket)[0]
+    return datetime.strptime(bought_at_str, '%d/%m/%Y %H:%M')
+
+
+def build_product_list(raw_ticket: str) -> list[Product]:
+    raw_product_list = get_raw_product_list(raw_ticket)
+    return product_parser(raw_product_list)
+
+
+def get_raw_product_list(raw_ticket: str) -> list[str]:
+    return find_product_list_lines(raw_ticket.split('\n'))
 
 
 def find_product_list_lines(lines: list[str]) -> list[str]:
@@ -19,8 +43,8 @@ def find_product_list_lines(lines: list[str]) -> list[str]:
     return lines[start_index + 1:end_index]
 
 
-def get_raw_product_list(ticket: str) -> list[str]:
-    return find_product_list_lines(read_pdf_text(ticket))
+def index(l, f):
+    return next((i for i in range(len(l)) if f(l[i])), None)
 
 
 def product_parser(raw_products: list[str]) -> list[Product]:
@@ -68,7 +92,3 @@ def build_vegetable_product(raw_product_first_line: str, raw_product_second_line
     price = float(price_match.group(0).replace(',', '.'))
 
     return Product(name, quantity, price)
-
-
-def index(l, f):
-    return next((i for i in range(len(l)) if f(l[i])), None)
