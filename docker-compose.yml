@@ -8,3 +8,9 @@ services:
       - "7133:8000"
 
     restart: unless-stopped
+
+    labels:
+    - homepage.group=Services
+    - homepage.name=Mercadona-Ticket
+    - homepage.icon=mdi-cart-outline
+    - homepage.href=https://mercadona-ticket.nubecita.dev
