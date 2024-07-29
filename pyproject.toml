@@ -8,6 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 pypdf = "^4.0.0"
+fastapi = "^0.111.1"
+uvicorn = "^0.30.3"
+pydantic = "^2.8.2"
 
 
 [build-system]
