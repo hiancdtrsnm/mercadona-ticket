@@ -15,6 +15,8 @@ def build_ticket(path: Union[str, IO[Any]]) -> Ticket:
     This function can be used to parse a ticket from a file in the filesystem or from a BytesIO object
     """
     raw_ticket_contents = read_pdf_text(path)
+    if raw_ticket_contents.startswith("Pedido Nº"):
+        return parse_online_ticket(raw_ticket_contents)
     bought_at = get_bought_at(raw_ticket_contents)
     products = build_product_list(raw_ticket_contents)
     return Ticket(bought_at=bought_at, products=products)
@@ -102,3 +104,26 @@ def build_vegetable_product(
     price = float(price_match.group(0).replace(",", "."))
 
     return Product(name, quantity, price)
+
+
+def parse_online_ticket(raw_ticket: str) -> Ticket:
+
+    regex = r"\d{2}/\d{2}/\d{2} a las \d{2}:\d{2}"
+    bought_at_str = re.search(regex, raw_ticket)[0]
+    bought_at_str = bought_at_str.replace(" a las", "")
+    bought_at = datetime.strptime(bought_at_str, "%d/%m/%y %H:%M")
+
+    pattern = re.compile(r'(?P<name>.+?)(?:\s*-?\s*Peso:.*?Precio kg:.*?\d{1,2},\d{2}\s*)?\s+(?P<quantity>\d+)\s+(?P<price>\d{1,2},\d{2} €)')
+
+    matches = pattern.findall(raw_ticket)
+
+    products = []
+    for match in matches:
+        product = Product(
+            name=match[0].strip(),
+            quantity=int(match[1]),
+            price=float(match[2].replace(",", ".").replace(" €", ""))
+        )
+        products.append(product)
+
+    return Ticket(bought_at=bought_at, products=products)
