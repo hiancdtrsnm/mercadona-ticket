@@ -108,12 +108,16 @@ def build_vegetable_product(
 
 def parse_online_ticket(raw_ticket: str) -> Ticket:
 
+
     regex = r"\d{2}/\d{2}/\d{2} a las \d{2}:\d{2}"
     bought_at_str = re.search(regex, raw_ticket)[0]
     bought_at_str = bought_at_str.replace(" a las", "")
     bought_at = datetime.strptime(bought_at_str, "%d/%m/%y %H:%M")
 
-    pattern = re.compile(r'(?P<name>.+?)(?:\s*-?\s*Peso:.*?Precio kg:.*?\d{1,2},\d{2}\s*)?\s+(?P<quantity>\d+)\s+(?P<price>\d{1,2},\d{2} €)')
+    raw_ticket = raw_ticket.replace("\n-", "").replace('\xa0', '')
+    raw_ticket = re.sub(r'€(\d)', r'€ \1', raw_ticket)
+
+    pattern = re.compile(r'(?P<name>.+?)\s+(?P<quantity>\d+)\s+(?P<price>\d{1,2},\d{2} €)')
 
     matches = pattern.findall(raw_ticket)
 
